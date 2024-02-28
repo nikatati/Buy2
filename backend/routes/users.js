@@ -4,6 +4,7 @@ const experss = require("express");
 const router = experss.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 
 //An get command to list of useresfrom the DB
 router.get(`/`, async (req, res) => {
@@ -17,24 +18,19 @@ router.get(`/`, async (req, res) => {
 
 // A GET command from the DB of a specific user
 router.get("/:id", async (req, res) => {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      console.log("Invalid ID format.");
-    }
-    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-      console.log("Valid ID format.");
-    }
-    const user = await User.findById(req.params.id).select("-passwordHash");
-    if (!user) {
-      return res
-        .status(500)
-        .json({ message: "The user with the given ID was not found." });
-    }
-    res.status(200).json(user);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    console.log("Invalid ID format.");
   }
+  if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+    console.log("Valid ID format.");
+  }
+  const user = await User.findById(req.params.id).select("-passwordHash");
+  if (!user) {
+    return res
+      .status(500)
+      .json({ message: "The user with the given ID was not found." });
+  }
+  res.status(200).json(user);
 });
 
 router.post("/", async (req, res) => {
@@ -60,6 +56,7 @@ router.post("/", async (req, res) => {
 router.post("/login", async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
   const secret = process.env.secret;
+
   if (!user) {
     return res.status(400).send("user not found");
   }
@@ -78,6 +75,36 @@ router.post("/login", async (req, res) => {
   } else {
     res.status(400).send("password is wrong!");
   }
+});
+
+//reutrns num of users
+router.get(`/get/count`, async (req, res) => {
+  const userCount = await User.countDocuments((count) => count);
+
+  if (!userCount) {
+    res.status(500).json({ success: false });
+  }
+  res.send({
+    userCount: userCount,
+  });
+});
+
+router.delete("/:id", (req, res) => {
+  User.findOneAndDelete(req.params.id)
+    .then((user) => {
+      if (user) {
+        return res
+          .status(200)
+          .json({ success: true, message: "the user is deleted!" });
+      } else {
+        return res
+          .status(404)
+          .json({ success: false, message: "user not found" });
+      }
+    })
+    .catch((err) => {
+      return res.status(500).json({ success: false, error: err });
+    });
 });
 
 module.exports = router;

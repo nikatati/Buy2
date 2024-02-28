@@ -33,11 +33,41 @@ router.get(`/:id`, async (req, res) => {
 
 //An post command from the DB
 router.post(`/`, async (req, res) => {
-  try {
-    const category = await Category.findById(req.body.category);
-    if (!category) return res.status(400).send("Invalid Category");
+  const category = await Category.findById(req.body.category);
+  if (!category) return res.status(400).send("Invalid Category");
 
-    const product = new Product({
+  const product = new Product({
+    name: req.body.name,
+    description: req.body.description,
+    richDescription: req.body.richDescription,
+    image: req.body.image,
+    brand: req.body.brand,
+    price: req.body.price,
+    category: req.body.category,
+    countInStock: req.body.countInStock,
+    rating: req.body.rating,
+    numReviews: req.body.numReviews,
+    isFeatured: req.body.isFeatured,
+  });
+
+  product = await product.save();
+
+  if (!product) return res.status(500).send("The Product cannot be created");
+
+  res.send(product);
+});
+
+router.put("/:id", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).send("Invalid Product Id");
+  }
+
+  const category = await Category.findById(req.body.category);
+  if (!category) return res.status(400).send("Invalid Category");
+
+  const product = await Product.findByIdAndUpdate(
+    req.params.id,
+    {
       name: req.body.name,
       description: req.body.description,
       richDescription: req.body.richDescription,
@@ -49,52 +79,12 @@ router.post(`/`, async (req, res) => {
       rating: req.body.rating,
       numReviews: req.body.numReviews,
       isFeatured: req.body.isFeatured,
-    });
+    },
+    { new: true }
+  );
+  if (!product) return res.status(500).send("the product cannot be updated!");
 
-    product = await product.save();
-
-    if (!product) return res.status(500).send("The Product cannot be created");
-
-    res.send(product);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-router.put("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    res.status(400).send("Invalid Product Id");
-  }
-
-  try {
-    const category = await Category.findById(req.body.category);
-    if (!category) return res.status(400).send("Invalid Category");
-
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      {
-        name: req.body.name,
-        description: req.body.description,
-        richDescription: req.body.richDescription,
-        image: req.body.image,
-        brand: req.body.brand,
-        price: req.body.price,
-        category: req.body.category,
-        countInStock: req.body.countInStock,
-        rating: req.body.rating,
-        numReviews: req.body.numReviews,
-        isFeatured: req.body.isFeatured,
-      },
-      { new: true }
-    );
-    if (!product) return res.status(500).send("the product cannot be updated!");
-
-    res.send(product);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
-  }
+  res.send(product);
 });
 
 router.delete("/:id", (req, res) => {
@@ -117,35 +107,25 @@ router.delete("/:id", (req, res) => {
 
 //reutrns num of products
 router.get(`/get/count`, async (req, res) => {
-  try {
-    const productCount = await Product.countDocuments((count) => count);
+  const productCount = await Product.countDocuments();
 
-    if (!productCount) {
-      res.status(500).json({ success: false });
-    }
-    res.send({
-      productCount: productCount,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
+  if (!productCount) {
+    res.status(500).json({ success: false });
   }
+  res.send({
+    productCount: productCount,
+  });
 });
 
 //reutrns num of featured products (מוצרים מומלצים)
 router.get(`/get/featured/:count`, async (req, res) => {
-  try {
-    const count = req.params.count ? req.params.count : 0;
-    const products = await Product.find({ isFeatured: true }).limit(+count);
+  const count = req.params.count ? req.params.count : 0;
+  const products = await Product.find({ isFeatured: true }).limit(+count);
 
-    if (!products) {
-      res.status(500).json({ success: false });
-    }
-    res.send(products);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
+  if (!products) {
+    res.status(500).json({ success: false });
   }
+  res.send(products);
 });
 
 module.exports = router;
